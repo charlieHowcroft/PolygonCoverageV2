@@ -79,13 +79,13 @@ def longest_line_algorithm(points, spacing):
     for count, point in enumerate(points):
         if count + 1 < len(points):
             equation_list.append(LinearEquation(point, points[count + 1]))
+            equation_list.sort(key=lambda a: a.domain[0])
     # equation list end
 
     # To find the beginning equation (the one describing the longest line)
     beginning_equation = LinearEquation(max_dist_point1, max_dist_point2)
 
     # List of intercepts
-    intercept_points = []
     intercept_points_above = []
     intercept_points_below = []
 
@@ -102,7 +102,7 @@ def longest_line_algorithm(points, spacing):
 
                 if equation.x is None:
                     x = (equation.c - beginning_equation.c -
-                         spacing * (count) / math.cos(math.atan(beginning_equation.slope))) / \
+                         spacing * (count + 1) / math.cos(math.atan(beginning_equation.slope))) / \
                         (beginning_equation.slope - equation.slope)
                     y = equation.slope * x + equation.c
                     intercept_point = Point(x, y)
@@ -114,7 +114,7 @@ def longest_line_algorithm(points, spacing):
 
                 else:
                     x = equation.x
-                    y = beginning_equation.slope * x + beginning_equation.c + spacing * (count) / \
+                    y = beginning_equation.slope * x + beginning_equation.c + spacing * (count + 1) / \
                         math.cos(math.atan(beginning_equation.slope))
                     intercept_point = Point(x, y)
 
@@ -127,6 +127,7 @@ def longest_line_algorithm(points, spacing):
     # to search below the beginning equation
     intercept_counter = 1
     count = 0
+
     while not intercept_counter == 0:
         intercept_counter = 0
 
@@ -137,7 +138,7 @@ def longest_line_algorithm(points, spacing):
 
                 if equation.x is None:
                     x = (equation.c - beginning_equation.c +
-                         spacing * (count) / math.cos(math.atan(beginning_equation.slope))) / \
+                         spacing * (count + 1) / math.cos(math.atan(beginning_equation.slope))) / \
                         (beginning_equation.slope - equation.slope)
                     y = equation.slope * x + equation.c
                     intercept_point = Point(x, y)
@@ -149,7 +150,7 @@ def longest_line_algorithm(points, spacing):
 
                 else:
                     x = equation.x
-                    y = beginning_equation.slope * x + beginning_equation.c - spacing * (count) / \
+                    y = beginning_equation.slope * x + beginning_equation.c - spacing * (count + 1) / \
                         math.cos(math.atan(beginning_equation.slope))
                     intercept_point = Point(x, y)
 
@@ -157,13 +158,6 @@ def longest_line_algorithm(points, spacing):
                         intercept_points_below.append(intercept_point)
                         intercept_counter = intercept_counter + 1
         count = count + 1
-
-    # if intercept_points_above and not intercept_points_below:
-    #     intercept_points_above.insert(0, max_dist_point1)
-    #     intercept_points_above.insert(0, max_dist_point2)
-    # if intercept_points_below:
-    #     intercept_points_above.insert(0, max_dist_point2)
-    #     intercept_points_above.insert(0, max_dist_point1)
 
     # to sort the intercepts
     for count, point in enumerate(intercept_points_above):
@@ -178,111 +172,128 @@ def longest_line_algorithm(points, spacing):
             temp2 = point
             intercept_points_below[count], intercept_points_below[count + 1] = temp1, temp2
 
+    if intercept_points_below:
+        intercept_points_below.insert(0, max_dist_point2)
+        intercept_points_below.insert(0, max_dist_point1)
+
+    if intercept_points_above:
+        intercept_points_above.insert(0, max_dist_point1)
+        intercept_points_above.insert(0, max_dist_point2)
+
     intercept_points_below.extend(intercept_points_above)
+
     return intercept_points_below
 
 
 def polygon_split_search_algorithm(points):
     # travels clockwise around the polygon
 
-    n = len(points)
-    print(n)
-    visited = [False] * n
-    print(visited)
+    other_polygons = []
 
-    main_polygon_list = []
-    polygons = []
+    def main_polygon(points_, at):
+        main_polygon_list = []
+        n = len(points_)
 
-    def main_polygon(points, at):
+        while at + 1 < n:
 
-        if at > 1 and not ccw(points[at - 2], points[at - 1], points[at]):
+            if at > 1 and not ccw(points_[at - 2], points_[at - 1], points_[at]):
 
-            counter_clockwise = False
-            original_at = at
-            new_polygon = [points[at - 1]]
+                counter_clockwise = False
+                original_at = at
+                new_polygon = [points_[at - 1]]
 
-            while not counter_clockwise and at + 1 < n:
-                new_polygon.append(points[at])
-                at = at + 1
-                counter_clockwise = ccw(points[original_at - 2], points[original_at - 1], points[at])
-            new_polygon.append(points[at])
-            new_polygon.append(new_polygon[0])
-            polygons.append(new_polygon)
+                while counter_clockwise is False and at + 1 < n:
+                    new_polygon.append(points_[at])
+                    at = at + 1
+                    counter_clockwise = ccw(points_[original_at - 2], points_[original_at - 1], points_[at])
 
-        main_polygon_list.append(points[at])
-        visited[at] = True
+                new_polygon.append(points_[at])
+                new_polygon.append(new_polygon[0])
+                other_polygons.append(new_polygon)
 
-        if at + 1 < n:
-            main_polygon(points, at + 1)
+            main_polygon_list.append(points_[at])
+
+            at = at + 1
+
+        main_polygon_list.append(points_[at])
 
         return main_polygon_list
 
-    polygons.insert(0, main_polygon(points, 0))
+    polygons = [main_polygon(points, 0)]
+    # polygons.extend(other_polygons)
+
+    print(polygons[0])
+
+    i = 0
+
+    while i < len(other_polygons):
+        polygons.append(main_polygon(other_polygons[i], 0))
+        i = i + 1
 
     return polygons
 
 
 def ccw(point_a, point_b, point_c):
+
     if (point_b.x - point_a.x) * (point_c.y - point_a.y) - (point_c.x - point_a.x) * (point_b.y - point_a.y) < 0:
         return True
-
     return False
 
 
-points = [Point(1, 1), Point(1, 4), Point(0, 5), Point(0, 7),Point(-1,8), Point(4, 4), Point(4.5, 6), Point(5, 2), Point(4, 1)]
-# points = [Point(1,1), Point(1,2), Point(3,2), Point(2,1)]
-# points = [Point(27.6, 45.7), Point(70.5, 60.4), Point(78, 19.1), Point(19.8, 10)]
-# points = [Point(5.9, 31.7), Point(70.5, 60.4), Point(78, 19.1), Point(39.1, 2)]
-# points = [Point(15, 10), Point(14,8), Point(20, 10), Point(20, 20), Point(10, 20), Point(5, 15)]
-# points = [Point(3.42, 5.65), Point(6.09, 5.8), Point(7.66, 4.18), Point(5.88, 2.37), Point(4.53, 1.51)]
+# points = [Point(1, 1), Point(1, 4), Point(0, 5), Point(0, 7),Point(-0.5, 10), Point(4, 4), Point(4.5, 6), Point(5, 2), Point(4, 1)]
+# points = [Point(1,0.5), Point(1,2), Point(3,2), Point(2,0.5)]
+# points = [Point(2.76, 4.57), Point(7.05, 6.04), Point(7.8, 1.91), Point(1.98, 1.0)]
+# points = [Point(.59, 3.17), Point(7.05, 6.04), Point(7.8, 1.91), Point(3.91, .2)]
+# points = [Point(1.5, 1.0), Point(1.4,.8), Point(2.0, 1.0), Point(2.0, 2.0), Point(1.0, 2.0), Point(.5, 1.5)]
+points = [Point(3.42, 5.65), Point(6.09, 5.8), Point(7.66, 4.18), Point(5.88, 2.37), Point(4.53, 1.51)]
 # points = [Point(15, 21), Point(22, 26), Point(33, 25), Point(32, 15), Point(26, 7.5), Point(25, 13)]
 # points = [Point(12.4, 40.1), Point(27.4, 57), Point(66.2, 50.2), Point(65.2, 29.3), Point(43.2, 10.7), Point(21.3, 17.2)]
 points.append(points[0])
 
-# # path finding start
-# intercepts = longest_line_algorithm(points, 0.2)
-# intercept_xs = []
-# intercept_ys = []
+# # polygon splitter start
 #
-# for intercept in intercepts:
-#     intercept_xs.append(intercept.x)
-#     intercept_ys.append(intercept.y)
+# x = []
+# y = []
+# for point in points:
+#     x.append(point.x)
+#     y.append(point.y)
 #
 # xs = []
 # ys = []
-# for point in points:
+# for point in polygon_split_search_algorithm(points)[3]:
 #     xs.append(point.x)
 #     ys.append(point.y)
 #
-# sequence = np.arange(len(intercept_xs))
+# # print(*polygon_split_search_algorithm(points)[0])
+# # print(ccw(Point(1,1), Point(1,4), Point(0,5)))
 #
-# plt.figure()
 # plt.plot(xs, ys)
-# plt.plot(intercept_xs, intercept_ys)
-# plt.plot(intercept_xs[0], intercept_ys[0], marker="o")
-# # plt.show()
-# plt.close()
-# # path finding end
+# plt.plot(x, y)
+# plt.show()
+# # polygon splitter end
 
+# path finding start
+intercepts = longest_line_algorithm(points, .5)
+intercept_xs = []
+intercept_ys = []
 
-# polygon splitter start
-
-x = []
-y = []
-for point in points:
-    x.append(point.x)
-    y.append(point.y)
+for intercept in intercepts:
+    intercept_xs.append(intercept.x)
+    intercept_ys.append(intercept.y)
 
 xs = []
 ys = []
-for point in polygon_split_search_algorithm(points)[0]:
+for point in points:
     xs.append(point.x)
     ys.append(point.y)
 
-print(*polygon_split_search_algorithm(points)[1])
-# print(ccw(Point(1,1), Point(1,4), Point(0,5)))
+sequence = np.arange(len(intercept_xs))
 
+plt.figure()
 plt.plot(xs, ys)
-plt.plot(x, y)
+plt.plot(intercept_xs, intercept_ys)
+plt.plot(intercept_xs[0], intercept_ys[0], marker="o")
 plt.show()
-# polygon splitter end
+# plt.close()
+# path finding end
+

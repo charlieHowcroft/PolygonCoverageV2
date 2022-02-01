@@ -40,7 +40,7 @@ class Point:
         return str(self.x) + ", " + str(self.y) + "\n\n"
 
 
-class Boundary:
+class Hole:
     pass
 
 
@@ -79,7 +79,9 @@ def longest_line_algorithm(points, spacing):
     for count, point in enumerate(points):
         if count + 1 < len(points):
             equation_list.append(LinearEquation(point, points[count + 1]))
-            equation_list.sort(key=lambda a: a.domain[0])
+
+    equation_list.sort(key=lambda a: a.domain[0])
+    print(*equation_list)
     # equation list end
 
     # To find the beginning equation (the one describing the longest line)
@@ -92,6 +94,8 @@ def longest_line_algorithm(points, spacing):
     # Scan for intercepts above the beginning equation
     intercept_counter = 1
     count = 0
+    a = 0
+
     while not intercept_counter == 0:
         intercept_counter = 0
 
@@ -112,6 +116,13 @@ def longest_line_algorithm(points, spacing):
                         intercept_points_above.append(intercept_point)
                         intercept_counter = intercept_counter + 1
 
+                        if a > 1:
+                            if intercept_point.x == intercept_points_above[a - 1].x and \
+                                    intercept_point.y == intercept_points_above[a - 1].y:
+                                intercept_points_above.pop()
+                                a = a - 1
+                        a = a + 1
+
                 else:
                     x = equation.x
                     y = beginning_equation.slope * x + beginning_equation.c + spacing * (count + 1) / \
@@ -122,11 +133,19 @@ def longest_line_algorithm(points, spacing):
                         intercept_points_above.append(intercept_point)
                         intercept_counter = intercept_counter + 1
 
+                        if a > 1:
+                            if intercept_point.x == intercept_points_above[a - 1].x and \
+                                    intercept_point.y == intercept_points_above[a - 1].y:
+                                intercept_points_above.pop()
+                                a = a - 1
+                        a = a + 1
+
         count = count + 1
 
     # to search below the beginning equation
     intercept_counter = 1
     count = 0
+    a = 0
 
     while not intercept_counter == 0:
         intercept_counter = 0
@@ -148,6 +167,13 @@ def longest_line_algorithm(points, spacing):
                         intercept_points_below.append(intercept_point)
                         intercept_counter = intercept_counter + 1
 
+                        if a > 0:
+                            if intercept_point.x == intercept_points_below[a - 1].x and \
+                                    intercept_point.y == intercept_points_below[a - 1].y:
+                                intercept_points_below.pop()
+                                a = a - 1
+                        a = a + 1
+
                 else:
                     x = equation.x
                     y = beginning_equation.slope * x + beginning_equation.c - spacing * (count + 1) / \
@@ -157,6 +183,13 @@ def longest_line_algorithm(points, spacing):
                     if min(equation.range) <= intercept_point.y <= max(equation.range):
                         intercept_points_below.append(intercept_point)
                         intercept_counter = intercept_counter + 1
+
+                        if a > 1:
+                            if intercept_point.x == intercept_points_below[a - 1].x and \
+                                    intercept_point.y == intercept_points_below[a - 1].y:
+                                intercept_points_below.pop()
+                                a = a - 1
+                        a = a + 1
         count = count + 1
 
     # to sort the intercepts
@@ -181,13 +214,10 @@ def longest_line_algorithm(points, spacing):
         intercept_points_above.insert(0, max_dist_point2)
 
     intercept_points_below.extend(intercept_points_above)
-
     return intercept_points_below
 
 
 def polygon_split_search_algorithm(points):
-    # travels clockwise around the polygon
-
     other_polygons = []
 
     def main_polygon(points_, at):
@@ -196,13 +226,14 @@ def polygon_split_search_algorithm(points):
 
         while at + 1 < n:
 
-            if at > 1 and not ccw(points_[at - 2], points_[at - 1], points_[at]):
+            if at > 1 and ccw(points_[at - 2], points_[at - 1], points_[at]):
 
-                counter_clockwise = False
+                print("Here")
+                counter_clockwise = True
                 original_at = at
                 new_polygon = [points_[at - 1]]
 
-                while counter_clockwise is False and at + 1 < n:
+                while counter_clockwise is True and at + 1 < n:
                     new_polygon.append(points_[at])
                     at = at + 1
                     counter_clockwise = ccw(points_[original_at - 2], points_[original_at - 1], points_[at])
@@ -222,8 +253,6 @@ def polygon_split_search_algorithm(points):
     polygons = [main_polygon(points, 0)]
     # polygons.extend(other_polygons)
 
-    print(polygons[0])
-
     i = 0
 
     while i < len(other_polygons):
@@ -234,66 +263,106 @@ def polygon_split_search_algorithm(points):
 
 
 def ccw(point_a, point_b, point_c):
-
     if (point_b.x - point_a.x) * (point_c.y - point_a.y) - (point_c.x - point_a.x) * (point_b.y - point_a.y) < 0:
-        return True
-    return False
+        return False
+    return True
 
 
-# points = [Point(1, 1), Point(1, 4), Point(0, 5), Point(0, 7),Point(-0.5, 10), Point(4, 4), Point(4.5, 6), Point(5, 2), Point(4, 1)]
+def angle(point_a, point_b, point_c):
+    pass
+
+points = [Point(1, 1), Point(1, 4), Point(0, 5), Point(0, 7), Point(-0.5, 10), Point(4, 4), Point(4.5, 6), Point(5, 2),
+          Point(4, 1)]
 # points = [Point(1,0.5), Point(1,2), Point(3,2), Point(2,0.5)]
 # points = [Point(2.76, 4.57), Point(7.05, 6.04), Point(7.8, 1.91), Point(1.98, 1.0)]
 # points = [Point(.59, 3.17), Point(7.05, 6.04), Point(7.8, 1.91), Point(3.91, .2)]
-# points = [Point(1.5, 1.0), Point(1.4,.8), Point(2.0, 1.0), Point(2.0, 2.0), Point(1.0, 2.0), Point(.5, 1.5)]
-points = [Point(3.42, 5.65), Point(6.09, 5.8), Point(7.66, 4.18), Point(5.88, 2.37), Point(4.53, 1.51)]
-# points = [Point(15, 21), Point(22, 26), Point(33, 25), Point(32, 15), Point(26, 7.5), Point(25, 13)]
-# points = [Point(12.4, 40.1), Point(27.4, 57), Point(66.2, 50.2), Point(65.2, 29.3), Point(43.2, 10.7), Point(21.3, 17.2)]
+# points = [Point(1.5, 1.0), Point(1.4,.8), Point(2.0, 1.0), Point(2.0, 2.0), Point(1.0, 2.0), Point(.5, 1.5)]  #bugged
+# points = [Point(3.42, 5.65), Point(6.09, 5.8), Point(7.66, 4.18), Point(5.88, 0), Point(4.53, 1.51)]  # Bugged
+# points = [Point(1.5, 2.1), Point(2.2, 2.6), Point(3.3, 2.5), Point(3.2, 1.5), Point(2.6, .75),
+#           Point(2.5, 1.3)]  # Bugged
+# points = [Point(1.24, 4.01), Point(2.74, 5.7), Point(6.62, 5.02), Point(6.52, 2.93), Point(4.32, 1.07), Point(2.13, 1.72)]
 points.append(points[0])
 
-# # polygon splitter start
-#
-# x = []
-# y = []
-# for point in points:
-#     x.append(point.x)
-#     y.append(point.y)
-#
-# xs = []
-# ys = []
-# for point in polygon_split_search_algorithm(points)[3]:
-#     xs.append(point.x)
-#     ys.append(point.y)
-#
-# # print(*polygon_split_search_algorithm(points)[0])
-# # print(ccw(Point(1,1), Point(1,4), Point(0,5)))
-#
-# plt.plot(xs, ys)
-# plt.plot(x, y)
-# plt.show()
-# # polygon splitter end
 
-# path finding start
-intercepts = longest_line_algorithm(points, .5)
-intercept_xs = []
-intercept_ys = []
+def plotter(boundary_points, search_polygons):
+    boundary_points_x = []
+    boundary_points_y = []
+    for point in boundary_points:
+        boundary_points_x.append(point.x)
+        boundary_points_y.append(point.y)
 
-for intercept in intercepts:
-    intercept_xs.append(intercept.x)
-    intercept_ys.append(intercept.y)
+    search_polygons_x_y = []
+    for search_polygon in search_polygons:
+        search_polygon_x = []
+        search_polygon_y = []
 
-xs = []
-ys = []
-for point in points:
-    xs.append(point.x)
-    ys.append(point.y)
+        for point in search_polygon:
+            search_polygon_x.append(point.x)
+            search_polygon_y.append(point.y)
+        search_polygons_x_y.append([search_polygon_x, search_polygon_y])
 
-sequence = np.arange(len(intercept_xs))
+    intercept_x_y = []
+    for search_polygon in search_polygons:
 
-plt.figure()
-plt.plot(xs, ys)
-plt.plot(intercept_xs, intercept_ys)
-plt.plot(intercept_xs[0], intercept_ys[0], marker="o")
-plt.show()
-# plt.close()
-# path finding end
+        intercepts = longest_line_algorithm(search_polygon, .5)
+        intercept_xs = []
+        intercept_ys = []
 
+        for intercept in intercepts:
+            intercept_xs.append(intercept.x)
+            intercept_ys.append(intercept.y)
+
+        intercept_x_y.append([intercept_xs, intercept_ys])
+
+    # Boundary plotting start
+
+    plt.plot(boundary_points_x, boundary_points_y)
+    plt.title("Original Boundary")
+    # plt.axis("off")
+    plt.show()
+
+    for path in intercept_x_y:
+        plt.plot(boundary_points_x, boundary_points_y)
+        plt.plot(path[0], path[1])
+        plt.show()
+
+
+def menu1():
+    print("[1] Enter your own polygon")
+    print("[2] Select preset polygon")
+    print("[0] Exit the program")
+
+def add_point_menu():
+    print("[1] Add a point")
+    print("[0] Finish Polygon")
+
+
+def main():
+    print("This script shows the path calculate for the given path.\n"
+          "If the path is un-desirable you can re calculate.\n")
+
+    menu1()
+    option = int(input("Enter your option: "))
+
+    while option != 0:
+
+        if option == 1:
+            add_point_menu()
+
+        elif option == 2:
+            plotter(points, polygon_split_search_algorithm(points))
+            print("Do you want to recompute path with different sub polygons?\n[1]: yes\n[2]: no")
+            option = int(input("Enter: "))
+            while option == 1:
+                points.pop(0)
+                points.append(points[0])
+                plotter(points, polygon_split_search_algorithm(points))
+                print("Do you want to recompute path with different sub polygons?\n[1]: yes\n[2]: no")
+                option = int(input("Enter: "))
+        else:
+            print("Invalid Option, Enter again")
+
+        menu1()
+        option = int(input("Enter your option: "))
+
+main()
